@@ -36,7 +36,7 @@ class Geometry(QWidget):
 
     def setup(self):
 
-        # Odpowiada za wygląd okna służącego do obsługi programu
+        # Stworzenie okna służącego do obsługi programu
         self.setFixedSize(420, 300)
         self.setWindowTitle("Geometria")
 
@@ -137,8 +137,10 @@ class Geometry(QWidget):
         self.figure = None
         self.plot_window = None
 
-    def data(self):  # Obsługuje wprowadzone dane oraz wyświetla wynik
-        try:  # Pobiera dane od użytkownika wprowadzone w polach
+    # Funkcja obsługująca wprowadzone dane oraz wyświetlająca wykres
+    def data(self):
+        try:
+            # Pobranie danych od użytkownika wprowadzonych w polach
             x1 = float(self.x1_line.text())
             y1 = float(self.y1_line.text())
             x2 = float(self.x2_line.text())
@@ -148,13 +150,14 @@ class Geometry(QWidget):
             x4 = float(self.x4_line.text())
             y4 = float(self.y4_line.text())
 
+            # Ograniczenie wpisywanych danych przez użytkownika
             if not (-50 <= x1 <= 50) or not (-50 <= y1 <= 50) or not (-50 <= x2 <= 50) or not (-50 <= y2 <= 50) or not (
                     -50 <= x3 <= 50) or not (-50 <= y3 <= 50) or not (-50 <= x4 <= 50) or not (-50 <= y4 <= 50):
-                raise ValueError  # Tworzy zakres jaki można wprowadzić
+                raise ValueError
 
             intersection_point = self.calculateIntersection(x1, y1, x2, y2, x3, y3, x4, y4)  # definuje punkt przecięcia
 
-            # Obsługuję okna wykresu
+            # Wywołanie okna wykresu
             if self.plot_window is None:
                 self.plot_window = QWidget()
             else:
@@ -168,43 +171,44 @@ class Geometry(QWidget):
             else:
                 plt.close(self.figure)
 
-            # Generuje odcinki na wykresie:
-            plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
-            plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
-
             if isinstance(intersection_point, tuple):  # Sprawdza czy istnieje punkt przecięcia oraz zaokrągla wynik
                 intersection_x, intersection_y = intersection_point
                 intersection_x = round(intersection_x, 2)
                 intersection_y = round(intersection_y, 2)
 
-                # Wyświetla wynik obliczeń w programie oraz na wykresie:
-                plt.plot(intersection_x, intersection_y, 'go', label='Przecięcie')
+                # Wyświetlenie wyniku obliczeń w programie oraz odcinków z punktem przecięcia na wykresie:
                 plt.title(f"Punkt przecięcia odcinków to: ({intersection_x}, {intersection_y})")
+                plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
+                plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
+                plt.plot(intersection_x, intersection_y, 'go', label='Przecięcie')
                 self.W_pos.setText(f"Punkt przecięcia odcinków to: ({intersection_x}, {intersection_y})")
                 self.W_pos.show()
                 self.W_neg.hide()
                 self.error.hide()
             else:
-                # Wyświetla informację o braku przecięcia w programie oraz na wykresie:
+                # Wyświetlenie informacji o braku punktu przecięcia oraz umieszczenie odcinków na wykresie:
                 plt.title('Wykres odcinków nieprzecinających się')
+                plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
+                plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
                 self.W_neg.setText("Odcinki nie przecinają się")
                 self.W_neg.show()
                 self.W_pos.hide()
                 self.error.hide()
 
-            # Wyświetlenie wykresu
+            # Wyświetlenie wykresu na wcześniej wywołanym oknie
             plt.xlabel('X')
             plt.ylabel('Y')
             plt.legend(loc='best')
             plt.grid(True)
             plt.show()
 
-        except ValueError:  # Odpowiada za wyświetlanie komunikatu w przypadku błędu
+        # Wyświetlenie komunikatów z błędami
+        except ValueError:
             self.W_neg.hide()
             self.W_pos.hide()
             self.error.show()
 
-        # Czyści pola do wpisywania współżędnych po każdym użyciu
+        # Wyczyszczenie pól po użyciu
         self.x1_line.clear()
         self.y1_line.clear()
         self.x2_line.clear()
@@ -214,29 +218,24 @@ class Geometry(QWidget):
         self.x4_line.clear()
         self.y4_line.clear()
 
+    # Obliczanie części wspólnej odcinków
     @staticmethod
     def calculateIntersection(x1, y1, x2, y2, x3, y3, x4, y4):
-        def det(a, b):
-            return a[0] * b[1] - a[1] * b[0]
-
-        a1 = y2 - y1
-        b1 = x1 - x2
-        c1 = det([x1, y1], [x2, y2])
-
-        a2 = y4 - y3
-        b2 = x3 - x4
-        c2 = det([x3, y3], [x4, y4])
-
-        det_ = det([a1, b1], [a2, b2])
-        if det_ == 0:
+        denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+        if denom == 0:
             return False
-
-        x = det([c1, b1], [c2, b2]) / det_
-        y = det([a1, c1], [a2, c2]) / det_
-
+        ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
+        if ua < 0 or ua > 1:
+            return False
+        ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom
+        if ub < 0 or ub > 1:
+            return False
+        x = x1 + ua * (x2 - x1)
+        y = y1 + ua * (y2 - y1)
         return x, y
 
-    def closeEvent(self, event: QCloseEvent):  # Obsługuga okno dialogowe
+    # Obsługa przycisków "Wykonaj" i "Zamknij" w oknie programu
+    def closeEvent(self, event: QCloseEvent):
         should_close = QMessageBox.question(self, "Zamknij aplikację", "Czy chcesz zamknąć aplikację?",
                                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                             QMessageBox.StandardButton.No)
