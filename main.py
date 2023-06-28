@@ -1,6 +1,7 @@
 # Importuj niezbędne biblioteki i moduły
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from PySide6.QtGui import QCloseEvent, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox, QLineEdit, QLabel
 
@@ -205,11 +206,22 @@ class Geometry(QWidget):
                 self.W_zaw.hide()
 
             # Wyświetl wynik w programie i wyświetl nachodzące na siebie odcinki
-            elif (x1 <= x3 <= x2 or x1 <= x4 <= x2 or x3 <= x1 <= x4 or x3 <= x2 <= x4) and \
-                    (y1 <= y3 <= y2 or y1 <= y4 <= y2 or y3 <= y1 <= y4 or y3 <= y2 <= y4):
+            elif (x3 < x1 < x4 or x3 < x2 < x4 or x1 < x3 < x2 or x1 < x4 < x2 or x1 == x3 or x2 == x4) and \
+                    (y3 < y1 < y4 or y3 < y2 < y4 or y1 < y3 < y2 or y1 < y4 < y2 or y1 == y3 or y2 == y4):
+
                 plt.title('Wykres odcinków nakładających się')
                 plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
                 plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
+
+                x_fill = np.array([max(x1, x3), min(x2, x4)])
+                y_fill = np.array([max(y1, y3), min(y2, y4)])
+
+                plt.plot([x_fill[0], x_fill[0]], [y_fill[0], y_fill[0]], 'ko',
+                         label='Początek oraz koniec części wspólnej')
+                plt.plot([x_fill[0], x_fill[1]], [y_fill[0], y_fill[1]], 'ko', )
+
+                self.W_zaw.setText(
+                    f"Odcinek posiada część wspólną: ({x_fill[0]}, {y_fill[0]}), ({x_fill[1]}, {y_fill[1]})")
                 self.W_zaw.show()
                 self.W_pos.hide()
                 self.W_neg.hide()
@@ -258,33 +270,19 @@ class Geometry(QWidget):
         if denom == 0:
             return None
 
-        # Oblicz parametr „ua”, aby określić punkt przecięcia
+        # Oblicz parametry „ua” i „ub”, aby określić punkt przecięcia
         ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
-
-        # Sprawdź, czy punkt przecięcia leży poza zasięgiem pierwszego odcinka
-        if ua < 0 or ua > 1:
-            return None
-
-        # Oblicz parametr „ub”, aby określić punkt przecięcia na drugim odcinku
         ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom
 
-        # Sprawdź, czy punkt przecięcia leży poza zasięgiem drugiego odcinka
-        if ub < 0 or ub > 1:
-            return None
+        # Sprawdź, czy punkt przecięcia leży wewnątrz obu odcinków
+        if 0 <= ua <= 1 and 0 <= ub <= 1:
+            # Oblicz współrzędne punktu przecięcia
+            x = x1 + ua * (x2 - x1)
+            y = y1 + ua * (y2 - y1)
+            return x, y
 
-        # Sprawdź, czy punkt przecięcia pokrywa się z jednym z punktów końcowych dowolnego odcinka
-        if ua == 0 or ua == 1 or ub == 0 or ub == 1:
-            if (x1, y1) == (x3, y3) or (x1, y1) == (x4, y4):
-                return x1, y1
-            if (x2, y2) == (x3, y3) or (x2, y2) == (x4, y4):
-                return x2, y2
-            return None
-
-        # Oblicz współrzędne punktu przecięcia
-        x = x1 + ua * (x2 - x1)
-        y = y1 + ua * (y2 - y1)
-
-        return x, y
+        # Jeśli odcinki się nie przecinają, zwróć None
+        return None
 
     # Obsłuż zdarzenie „Zamknij” okna programu
     def closeEvent(self, event: QCloseEvent):
