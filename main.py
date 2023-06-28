@@ -198,8 +198,7 @@ class Geometry(QWidget):
                 plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
                 plt.plot(intersection_x, intersection_y,
                          'go', label='Przecięcie')
-                self.W_pos.setText(
-                    f"Punkt przecięcia odcinków to: ({intersection_x}, {intersection_y})")
+                self.W_pos.setText(f"Punkt przecięcia odcinków to: ({intersection_x:.2f}, {intersection_y:.2f})")
                 self.W_pos.show()
                 self.W_neg.hide()
                 self.error.hide()
@@ -209,23 +208,36 @@ class Geometry(QWidget):
             elif (x3 < x1 < x4 or x3 < x2 < x4 or x1 < x3 < x2 or x1 < x4 < x2 or x1 == x3 or x2 == x4) and \
                     (y3 < y1 < y4 or y3 < y2 < y4 or y1 < y3 < y2 or y1 < y4 < y2 or y1 == y3 or y2 == y4):
 
-                plt.title('Wykres odcinków nakładających się')
-                plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
-                plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
+                # Sprawdź czy odcinki równoległe są na różnych wysokościach, jeśli tak wyświetl tylko odcinki
+                if (y1 - y3) * (x2 - x1) != (y2 - y1) * (x1 - x3):
+                    plt.title('Wykres odcinków nieprzecinających się')
+                    plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
+                    plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
+                    self.W_neg.setText("Odcinki nie przecinają się")
+                    self.W_neg.show()
+                    self.W_pos.hide()
+                    self.error.hide()
+                    self.W_zaw.hide()
 
-                x_fill = np.array([max(x1, x3), min(x2, x4)])
-                y_fill = np.array([max(y1, y3), min(y2, y4)])
+                # Wyświetl nakładające się odcinki i ich punkty wspólne
+                else:
+                    plt.title('Wykres odcinków nakładających się')
+                    plt.plot([x1, x2], [y1, y2], 'b-', label='Linia 1')
+                    plt.plot([x3, x4], [y3, y4], 'r-', label='Linia 2')
 
-                plt.plot([x_fill[0], x_fill[0]], [y_fill[0], y_fill[0]], 'ko',
-                         label='Początek oraz koniec części wspólnej')
-                plt.plot([x_fill[0], x_fill[1]], [y_fill[0], y_fill[1]], 'ko', )
+                    x_fill = np.array([max(x1, x3), min(x2, x4)])
+                    y_fill = np.array([max(y1, y3), min(y2, y4)])
 
-                self.W_zaw.setText(
-                    f"Odcinek posiada część wspólną: ({x_fill[0]}, {y_fill[0]}), ({x_fill[1]}, {y_fill[1]})")
-                self.W_zaw.show()
-                self.W_pos.hide()
-                self.W_neg.hide()
-                self.error.hide()
+                    plt.plot([x_fill[0], x_fill[0]], [y_fill[0], y_fill[0]], 'ko',
+                             label='Początek oraz koniec części wspólnej')
+                    plt.plot([x_fill[0], x_fill[1]], [y_fill[0], y_fill[1]], 'ko', )
+
+                    self.W_zaw.setText(
+                        f"Odcinek posiada część wspólną: ({x_fill[0]}, {y_fill[0]}), ({x_fill[1]}, {y_fill[1]})")
+                    self.W_zaw.show()
+                    self.W_pos.hide()
+                    self.W_neg.hide()
+                    self.error.hide()
 
             else:
                 # Wyświetl informację o braku punktu przecięcia i wyświetl odcinki linii
